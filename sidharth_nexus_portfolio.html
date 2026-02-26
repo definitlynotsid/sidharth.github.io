@@ -1,0 +1,2022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIDHARTH BABU — The Nexus Core</title>
+<meta name="description" content="Sidharth Babu — Game Designer, AI Builder, Vibe Coder. Interactive 3D portfolio experience.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --void: #03030a;
+  --surface: #08081a;
+  --surface-2: #0d0d24;
+  --core-blue: #0af;
+  --core-cyan: #00ffe0;
+  --plasma-pink: #f0f;
+  --plasma-rose: #ff2d7b;
+  --signal-green: #0f0;
+  --data-amber: #ffa800;
+  --text-white: #e4e4f0;
+  --text-ghost: #5a5a80;
+  --glass: rgba(8, 8, 26, 0.75);
+  --glass-edge: rgba(0, 170, 255, 0.1);
+  --radius: 2px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--void);
+  color: var(--text-white);
+  font-family: 'Chakra Petch', sans-serif;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ============ PRELOADER ============ */
+#preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  background: var(--void);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+
+#preloader.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loader-ring {
+  width: 80px;
+  height: 80px;
+  border: 2px solid transparent;
+  border-top-color: var(--core-cyan);
+  border-right-color: var(--plasma-pink);
+  border-radius: 50%;
+  animation: loaderSpin 1s linear infinite;
+  margin-bottom: 2rem;
+}
+
+@keyframes loaderSpin { to { transform: rotate(360deg); } }
+
+.loader-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--core-cyan);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  animation: loaderPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes loaderPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.loader-bar-track {
+  width: 200px;
+  height: 2px;
+  background: rgba(0,170,255,0.1);
+  margin-top: 1.5rem;
+  overflow: hidden;
+  border-radius: 1px;
+}
+
+.loader-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--core-cyan), var(--plasma-pink));
+  transition: width 0.3s ease;
+}
+
+/* ============ CURSOR ============ */
+.cursor-core {
+  position: fixed;
+  width: 6px;
+  height: 6px;
+  background: var(--core-cyan);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 19000;
+  box-shadow: 0 0 12px var(--core-cyan), 0 0 30px rgba(0,255,224,0.3);
+  transition: transform 0.08s;
+}
+
+.cursor-field {
+  position: fixed;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid rgba(0,255,224,0.3);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 18999;
+  transition: all 0.2s cubic-bezier(0.23,1,0.32,1);
+}
+
+.cursor-field.active {
+  width: 70px;
+  height: 70px;
+  border-color: var(--plasma-pink);
+  background: rgba(255,0,255,0.03);
+}
+
+/* ============ THREE.JS CANVAS ============ */
+#world {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+/* ============ OVERLAYS ============ */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.025;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(3,3,10,0.7) 100%);
+}
+
+.hud-lines {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,255,224,0.008) 3px, rgba(0,255,224,0.008) 4px);
+}
+
+/* ============ HUD NAVIGATION ============ */
+.hud-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  padding: 1.2rem 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(to bottom, rgba(3,3,10,0.9), transparent);
+}
+
+.hud-logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 4px;
+  color: var(--core-cyan);
+  text-decoration: none;
+  position: relative;
+}
+
+.hud-logo .logo-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--plasma-pink);
+  border-radius: 50%;
+  margin-left: 2px;
+  animation: dotPulse 2s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--plasma-pink);
+}
+
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+}
+
+.hud-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+}
+
+.hud-links a {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-ghost);
+  text-decoration: none;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  transition: all 0.3s;
+  position: relative;
+  padding-bottom: 4px;
+}
+
+.hud-links a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--core-cyan);
+  transition: width 0.3s;
+}
+
+.hud-links a:hover { color: var(--core-cyan); }
+.hud-links a:hover::after { width: 100%; }
+
+.hud-status {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--signal-green);
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--signal-green);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--signal-green);
+  animation: dotPulse 2s ease-in-out infinite;
+}
+
+/* ============ CONTENT SECTIONS ============ */
+.content-layer {
+  position: relative;
+  z-index: 10;
+}
+
+.section {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 6rem 4rem;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+/* ============ HERO / BOOT SEQUENCE ============ */
+.hero-section {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  padding: 2rem;
+}
+
+.boot-line {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--core-cyan);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  opacity: 0;
+  margin-bottom: 0.5rem;
+}
+
+.hero-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(3.5rem, 9vw, 8rem);
+  line-height: 0.95;
+  letter-spacing: -2px;
+  margin: 1.5rem 0;
+  opacity: 0;
+  position: relative;
+}
+
+.hero-name .line-1 {
+  display: block;
+  background: linear-gradient(90deg, var(--text-white), var(--core-cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-name .line-2 {
+  display: block;
+  background: linear-gradient(90deg, var(--core-cyan), var(--plasma-pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-subtitle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--text-ghost);
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  opacity: 0;
+  margin-bottom: 2rem;
+}
+
+.hero-subtitle .cycle-word {
+  color: var(--core-cyan);
+  font-weight: 600;
+  min-width: 180px;
+  display: inline-block;
+  text-align: left;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1.5rem;
+  opacity: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-nexus {
+  padding: 0.85rem 2.2rem;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: none;
+  cursor: none;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.23,1,0.32,1);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+
+.btn-primary {
+  background: var(--core-cyan);
+  color: var(--void);
+}
+
+.btn-primary:hover {
+  background: #fff;
+  box-shadow: 0 0 40px rgba(0,255,224,0.4), inset 0 0 20px rgba(0,255,224,0.1);
+  transform: translateY(-3px);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--core-cyan);
+  box-shadow: inset 0 0 0 1px rgba(0,255,224,0.3);
+}
+
+.btn-ghost:hover {
+  box-shadow: inset 0 0 0 1px var(--core-cyan), 0 0 30px rgba(0,255,224,0.15);
+  background: rgba(0,255,224,0.05);
+  transform: translateY(-3px);
+}
+
+.hero-scroll {
+  position: absolute;
+  bottom: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  opacity: 0;
+}
+
+.hero-scroll span {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 5px;
+  color: var(--text-ghost);
+  text-transform: uppercase;
+}
+
+.scroll-chevrons {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.scroll-chevrons i {
+  width: 10px;
+  height: 10px;
+  border-right: 1px solid var(--core-cyan);
+  border-bottom: 1px solid var(--core-cyan);
+  transform: rotate(45deg);
+  opacity: 0.3;
+  animation: chevronPulse 2s ease-in-out infinite;
+}
+
+.scroll-chevrons i:nth-child(2) { animation-delay: 0.2s; }
+.scroll-chevrons i:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes chevronPulse {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+/* ============ SECTION HEADER SYSTEM ============ */
+.sec-header {
+  margin-bottom: 4rem;
+}
+
+.sec-index {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--plasma-pink);
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  margin-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sec-index::before {
+  content: '';
+  width: 30px;
+  height: 1px;
+  background: var(--plasma-pink);
+}
+
+.sec-index::after {
+  content: '';
+  flex: 1;
+  max-width: 200px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,0,255,0.2), transparent);
+}
+
+.sec-title {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: clamp(2.2rem, 4.5vw, 4rem);
+  line-height: 1.1;
+  letter-spacing: -1px;
+}
+
+.sec-title .glow { text-shadow: 0 0 30px rgba(0,255,224,0.3); }
+
+/* ============ ABOUT / IDENTITY CORE ============ */
+.identity-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 5rem;
+  align-items: start;
+}
+
+.identity-visual {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hex-grid {
+  position: absolute;
+  inset: 0;
+}
+
+.hex-ring {
+  position: absolute;
+  inset: 5%;
+  border: 1px solid var(--glass-edge);
+  border-radius: 50%;
+  animation: hexSpin 25s linear infinite;
+}
+
+.hex-ring:nth-child(2) {
+  inset: 15%;
+  animation-duration: 18s;
+  animation-direction: reverse;
+  border-color: rgba(255,0,255,0.08);
+}
+
+.hex-ring:nth-child(3) {
+  inset: 28%;
+  animation-duration: 12s;
+  border-color: rgba(0,255,0,0.06);
+}
+
+@keyframes hexSpin { to { transform: rotate(360deg); } }
+
+.hex-node {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  top: -4px;
+  left: 50%;
+}
+
+.hex-ring:nth-child(1) .hex-node { background: var(--core-cyan); box-shadow: 0 0 12px var(--core-cyan); }
+.hex-ring:nth-child(2) .hex-node { background: var(--plasma-pink); box-shadow: 0 0 12px var(--plasma-pink); }
+.hex-ring:nth-child(3) .hex-node { background: var(--signal-green); box-shadow: 0 0 12px var(--signal-green); }
+
+.identity-core-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 3.5rem;
+  animation: corePulse 4s ease-in-out infinite;
+}
+
+@keyframes corePulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 15px rgba(0,255,224,0.3)); }
+  50% { transform: scale(1.08); filter: drop-shadow(0 0 35px rgba(0,255,224,0.6)); }
+}
+
+.identity-text p {
+  font-size: 1.05rem;
+  line-height: 2;
+  color: var(--text-ghost);
+  margin-bottom: 1.5rem;
+  font-weight: 300;
+}
+
+.identity-text .hl-cyan { color: var(--core-cyan); font-weight: 600; }
+.identity-text .hl-pink { color: var(--plasma-pink); font-weight: 600; }
+.identity-text .hl-green { color: var(--signal-green); font-weight: 600; }
+.identity-text .hl-amber { color: var(--data-amber); font-weight: 600; }
+
+/* ============ METRICS HUD ============ */
+.metrics-hud {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin-top: 5rem;
+  background: var(--glass-edge);
+}
+
+.metric-cell {
+  background: var(--surface);
+  padding: 2rem;
+  text-align: center;
+  position: relative;
+  transition: all 0.4s ease;
+}
+
+.metric-cell:hover {
+  background: var(--surface-2);
+  box-shadow: inset 0 -2px 0 var(--core-cyan);
+}
+
+.metric-value {
+  font-family: 'Syne', sans-serif;
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: var(--core-cyan);
+  display: block;
+  line-height: 1;
+}
+
+.metric-cell:nth-child(2) .metric-value { color: var(--plasma-pink); }
+.metric-cell:nth-child(3) .metric-value { color: var(--signal-green); }
+.metric-cell:nth-child(4) .metric-value { color: var(--data-amber); }
+
+.metric-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--text-ghost);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-top: 0.8rem;
+  display: block;
+}
+
+/* ============ SKILLS / SYSTEMS ARRAY ============ */
+.systems-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.system-card {
+  background: var(--surface);
+  border: 1px solid var(--glass-edge);
+  padding: 2.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.5s cubic-bezier(0.23,1,0.32,1);
+}
+
+.system-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--core-cyan), transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s ease;
+}
+
+.system-card:hover::before { transform: scaleX(1); }
+
+.system-card:hover {
+  border-color: rgba(0,255,224,0.2);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 40px rgba(0,255,224,0.05);
+}
+
+.system-card:nth-child(2)::before { background: linear-gradient(90deg, var(--plasma-pink), transparent); }
+.system-card:nth-child(3)::before { background: linear-gradient(90deg, var(--signal-green), transparent); }
+.system-card:nth-child(4)::before { background: linear-gradient(90deg, var(--data-amber), transparent); }
+
+.sys-icon {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.sys-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  letter-spacing: 0.5px;
+}
+
+.sys-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sys-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 1.5px;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid rgba(0,255,224,0.15);
+  color: var(--core-cyan);
+  transition: all 0.3s;
+}
+
+.sys-tag:hover {
+  background: rgba(0,255,224,0.08);
+  border-color: var(--core-cyan);
+}
+
+.system-card:nth-child(2) .sys-tag { border-color: rgba(255,0,255,0.15); color: var(--plasma-pink); }
+.system-card:nth-child(2) .sys-tag:hover { background: rgba(255,0,255,0.08); border-color: var(--plasma-pink); }
+.system-card:nth-child(3) .sys-tag { border-color: rgba(0,255,0,0.15); color: var(--signal-green); }
+.system-card:nth-child(3) .sys-tag:hover { background: rgba(0,255,0,0.08); border-color: var(--signal-green); }
+.system-card:nth-child(4) .sys-tag { border-color: rgba(255,168,0,0.15); color: var(--data-amber); }
+.system-card:nth-child(4) .sys-tag:hover { background: rgba(255,168,0,0.08); border-color: var(--data-amber); }
+
+/* ============ DATA FLOW VISUALIZER ============ */
+.dataflow-section {
+  position: relative;
+  overflow: visible;
+}
+
+#dataflow-canvas {
+  width: 100%;
+  height: 500px;
+  border: 1px solid var(--glass-edge);
+  background: var(--surface);
+  margin-top: 2rem;
+  display: block;
+}
+
+.dataflow-controls {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.df-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 0.6rem 1.5rem;
+  background: transparent;
+  border: 1px solid var(--glass-edge);
+  color: var(--text-ghost);
+  cursor: none;
+  transition: all 0.3s;
+}
+
+.df-btn:hover, .df-btn.active {
+  border-color: var(--core-cyan);
+  color: var(--core-cyan);
+  background: rgba(0,255,224,0.05);
+  box-shadow: 0 0 20px rgba(0,255,224,0.1);
+}
+
+.df-btn.stress:hover, .df-btn.stress.active {
+  border-color: var(--plasma-rose);
+  color: var(--plasma-rose);
+  background: rgba(255,45,123,0.05);
+  box-shadow: 0 0 20px rgba(255,45,123,0.1);
+}
+
+/* ============ EXPERIENCE TIMELINE ============ */
+.timeline-spatial {
+  position: relative;
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 0;
+}
+
+.timeline-rail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timeline-rail::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--core-cyan), var(--plasma-pink), var(--signal-green), transparent);
+}
+
+.timeline-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.tl-entry {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  position: relative;
+  min-height: 200px;
+}
+
+.tl-node {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 2.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.tl-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--core-cyan);
+  box-shadow: 0 0 20px var(--core-cyan), 0 0 40px rgba(0,255,224,0.2);
+  position: relative;
+}
+
+.tl-dot::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 1px solid rgba(0,255,224,0.3);
+  border-radius: 50%;
+  animation: ringExpand 3s ease-in-out infinite;
+}
+
+@keyframes ringExpand {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.5); opacity: 0; }
+}
+
+.tl-entry:nth-child(2) .tl-dot { background: var(--plasma-pink); box-shadow: 0 0 20px var(--plasma-pink); }
+.tl-entry:nth-child(2) .tl-dot::after { border-color: rgba(255,0,255,0.3); }
+.tl-entry:nth-child(3) .tl-dot { background: var(--signal-green); box-shadow: 0 0 20px var(--signal-green); }
+.tl-entry:nth-child(3) .tl-dot::after { border-color: rgba(0,255,0,0.3); }
+
+.tl-card {
+  padding: 2.5rem;
+  background: var(--surface);
+  border: 1px solid var(--glass-edge);
+  margin: 0.8rem 0;
+  transition: all 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.tl-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--core-cyan);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+
+.tl-card:hover::before { opacity: 1; }
+
+.tl-entry:nth-child(2) .tl-card::before { background: var(--plasma-pink); }
+.tl-entry:nth-child(3) .tl-card::before { background: var(--signal-green); }
+
+.tl-card:hover {
+  border-color: rgba(0,255,224,0.2);
+  transform: translateX(8px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.tl-date {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--core-cyan);
+  letter-spacing: 3px;
+  margin-bottom: 0.6rem;
+}
+
+.tl-entry:nth-child(2) .tl-date { color: var(--plasma-pink); }
+.tl-entry:nth-child(3) .tl-date { color: var(--signal-green); }
+
+.tl-role {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.tl-company {
+  font-size: 0.85rem;
+  color: var(--text-ghost);
+  margin-bottom: 1rem;
+  font-weight: 300;
+}
+
+.tl-desc {
+  font-size: 0.9rem;
+  line-height: 1.9;
+  color: var(--text-ghost);
+  font-weight: 300;
+}
+
+.tl-rail-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(to bottom, var(--core-cyan), var(--plasma-pink), var(--signal-green), transparent);
+}
+
+/* ============ PROJECT CORE ============ */
+.project-mega {
+  background: var(--surface);
+  border: 1px solid var(--glass-edge);
+  padding: 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.project-mega::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--core-cyan), var(--plasma-pink), var(--signal-green), var(--data-amber));
+}
+
+.project-mega::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(0,255,224,0.03), transparent 70%);
+  pointer-events: none;
+}
+
+.proj-type {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--signal-green);
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.proj-name {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(90deg, var(--core-cyan), var(--plasma-pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.proj-desc {
+  font-size: 1.05rem;
+  line-height: 2;
+  color: var(--text-ghost);
+  margin-bottom: 2.5rem;
+  max-width: 750px;
+  font-weight: 300;
+}
+
+.proj-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.proj-tech {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 1.5px;
+  padding: 0.5rem 1.3rem;
+  border: 1px solid var(--glass-edge);
+  color: var(--core-cyan);
+  background: rgba(0,255,224,0.03);
+  transition: all 0.3s;
+}
+
+.proj-tech:hover {
+  background: rgba(0,255,224,0.1);
+  border-color: var(--core-cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,255,224,0.1);
+}
+
+/* ============ EDUCATION ============ */
+.edu-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.edu-block {
+  background: var(--surface);
+  border: 1px solid var(--glass-edge);
+  padding: 2.5rem;
+  transition: all 0.4s;
+}
+
+.edu-block:hover {
+  border-color: rgba(0,255,224,0.2);
+  transform: translateY(-4px);
+}
+
+.edu-period {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--core-cyan);
+  letter-spacing: 2px;
+  margin-bottom: 0.8rem;
+}
+
+.edu-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.edu-inst {
+  font-size: 0.85rem;
+  color: var(--text-ghost);
+  font-weight: 300;
+}
+
+/* ============ OPEN TO / AVAILABILITY ============ */
+.avail-section { text-align: center; }
+
+.avail-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+  max-width: 900px;
+  margin: 0 auto 4rem;
+}
+
+.avail-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 1.5px;
+  padding: 0.65rem 1.5rem;
+  border: 1px solid var(--glass-edge);
+  color: var(--text-ghost);
+  transition: all 0.4s cubic-bezier(0.23,1,0.32,1);
+  position: relative;
+  overflow: hidden;
+}
+
+.avail-tag::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  transition: height 0.4s;
+  z-index: -1;
+}
+
+.avail-tag:nth-child(3n+1)::before { background: rgba(0,255,224,0.08); }
+.avail-tag:nth-child(3n+2)::before { background: rgba(255,0,255,0.08); }
+.avail-tag:nth-child(3n+3)::before { background: rgba(0,255,0,0.08); }
+
+.avail-tag:hover::before { height: 100%; }
+
+.avail-tag:nth-child(3n+1):hover { border-color: var(--core-cyan); color: var(--core-cyan); }
+.avail-tag:nth-child(3n+2):hover { border-color: var(--plasma-pink); color: var(--plasma-pink); }
+.avail-tag:nth-child(3n+3):hover { border-color: var(--signal-green); color: var(--signal-green); }
+
+.avail-tag:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+/* ============ CONTACT TERMINAL ============ */
+.contact-core {
+  text-align: center;
+  padding: 10rem 3rem;
+}
+
+.contact-heading {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  line-height: 1.1;
+}
+
+.contact-heading .gradient-text {
+  background: linear-gradient(135deg, #fff 0%, var(--core-cyan) 60%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.contact-sub {
+  font-size: 1rem;
+  color: var(--text-ghost);
+  margin-bottom: 2.5rem;
+  max-width: 550px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.9;
+  font-weight: 300;
+}
+
+.contact-info-row {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+
+.contact-info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: var(--text-ghost);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  transition: all 0.3s;
+}
+
+.contact-info-item:hover { color: var(--core-cyan); }
+
+.ci-icon {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--glass-edge);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  transition: all 0.3s;
+}
+
+.contact-info-item:hover .ci-icon {
+  border-color: var(--core-cyan);
+  box-shadow: 0 0 15px rgba(0,255,224,0.15);
+}
+
+.contact-btns {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+/* ============ FOOTER ============ */
+.hud-footer {
+  text-align: center;
+  padding: 3rem;
+  border-top: 1px solid var(--glass-edge);
+}
+
+.hud-footer p {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--text-ghost);
+  letter-spacing: 4px;
+}
+
+/* ============ REVEAL SYSTEM ============ */
+.rv {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: all 0.9s cubic-bezier(0.23,1,0.32,1);
+}
+
+.rv.seen {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.rv-d1 { transition-delay: 0.1s; }
+.rv-d2 { transition-delay: 0.2s; }
+.rv-d3 { transition-delay: 0.3s; }
+.rv-d4 { transition-delay: 0.4s; }
+.rv-d5 { transition-delay: 0.5s; }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1024px) {
+  .identity-grid { grid-template-columns: 1fr; gap: 3rem; }
+  .identity-visual { max-width: 300px; margin: 0 auto; }
+  .systems-grid { grid-template-columns: 1fr; }
+  .section { padding: 5rem 2rem; }
+}
+
+@media (max-width: 768px) {
+  .hud-links { display: none; }
+  .hud-status { display: none; }
+  .metrics-hud { grid-template-columns: 1fr 1fr; }
+  .edu-row { grid-template-columns: 1fr; }
+  .contact-info-row { flex-direction: column; align-items: center; gap: 1.5rem; }
+  .cursor-core, .cursor-field { display: none; }
+  body { cursor: auto; }
+  #dataflow-canvas { height: 300px; }
+  .project-mega { padding: 2.5rem; }
+  .tl-entry { grid-template-columns: 40px 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Preloader -->
+<div id="preloader">
+  <div class="loader-ring"></div>
+  <div class="loader-text">Initializing Nexus Core</div>
+  <div class="loader-bar-track">
+    <div class="loader-bar-fill" id="loaderFill"></div>
+  </div>
+</div>
+
+<!-- Cursor -->
+<div class="cursor-core" id="cCore"></div>
+<div class="cursor-field" id="cField"></div>
+
+<!-- Three.js World -->
+<canvas id="world"></canvas>
+
+<!-- Overlays -->
+<div class="grain"></div>
+<div class="vignette"></div>
+<div class="hud-lines"></div>
+
+<!-- Content -->
+<div class="content-layer">
+
+  <!-- HUD Nav -->
+  <nav class="hud-nav">
+    <a href="#" class="hud-logo">SIDHARTH<span class="logo-dot"></span></a>
+    <ul class="hud-links">
+      <li><a href="#about">Identity</a></li>
+      <li><a href="#systems">Systems</a></li>
+      <li><a href="#dataflow">Dataflow</a></li>
+      <li><a href="#timeline">Timeline</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#connect">Connect</a></li>
+    </ul>
+    <div class="hud-status">
+      <span class="status-dot"></span>
+      AVAILABLE FOR HIRE
+    </div>
+  </nav>
+
+  <!-- HERO / BOOT SEQUENCE -->
+  <section class="hero-section" id="hero">
+    <div class="boot-line" id="bootLine1">// NEXUS CORE v2.0 — SYSTEM ONLINE</div>
+    <div class="boot-line" id="bootLine2">// LOADING IDENTITY MATRIX...</div>
+    <h1 class="hero-name" id="heroName">
+      <span class="line-1">SIDHARTH</span>
+      <span class="line-2">BABU</span>
+    </h1>
+    <p class="hero-subtitle" id="heroSub">
+      <span class="cycle-word" id="cycleWord">GAME DESIGNER</span> — AI SYSTEMS ARCHITECT
+    </p>
+    <div class="hero-actions" id="heroActions">
+      <a href="#projects" class="btn-nexus btn-primary">Explore Work</a>
+      <a href="#connect" class="btn-nexus btn-ghost">Establish Link</a>
+    </div>
+    <div class="hero-scroll" id="heroScroll">
+      <span>Enter the Core</span>
+      <div class="scroll-chevrons"><i></i><i></i><i></i></div>
+    </div>
+  </section>
+
+  <!-- ABOUT / IDENTITY -->
+  <section class="section" id="about">
+    <div class="sec-header rv">
+      <div class="sec-index">01 — Identity Core</div>
+      <h2 class="sec-title"><span class="glow">Building Worlds.</span><br>Engineering Intelligence.</h2>
+    </div>
+    <div class="identity-grid">
+      <div class="identity-visual rv rv-d1">
+        <div class="hex-grid">
+          <div class="hex-ring"><div class="hex-node"></div></div>
+          <div class="hex-ring"><div class="hex-node"></div></div>
+          <div class="hex-ring"><div class="hex-node"></div></div>
+        </div>
+        <div class="identity-core-icon">⬡</div>
+      </div>
+      <div class="identity-text rv rv-d2">
+        <p>
+          I'm a <span class="hl-cyan">Game Designer</span> and <span class="hl-pink">AI Systems Architect</span> from Bengaluru, India. I don't build software — I engineer <span class="hl-green">experiences that think, adapt, and evolve</span>.
+        </p>
+        <p>
+          My methodology: <span class="hl-cyan">Vibe Coding</span> — fusing AI prompting with experiential design to create interactive systems at unprecedented speed. From immersive game worlds in Unreal Engine to real-time AI orchestration platforms, I operate at the intersection of <span class="hl-pink">human creativity</span> and <span class="hl-amber">machine intelligence</span>.
+        </p>
+        <p>
+          I believe the next era of digital experience belongs to those who can think in systems, feel in experiences, and build with AI as a creative partner. That's the <span class="hl-green">Nexus</span>.
+        </p>
+      </div>
+    </div>
+    <div class="metrics-hud rv rv-d3">
+      <div class="metric-cell">
+        <span class="metric-value" data-target="5">0</span>
+        <span class="metric-label">Tech Domains</span>
+      </div>
+      <div class="metric-cell">
+        <span class="metric-value" data-target="10">0</span>
+        <span class="metric-label">Tools Mastered</span>
+      </div>
+      <div class="metric-cell">
+        <span class="metric-value" data-target="3">0</span>
+        <span class="metric-label">Roles Held</span>
+      </div>
+      <div class="metric-cell">
+        <span class="metric-value" data-target="100">0</span>
+        <span class="metric-label">% Drive</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SKILLS / SYSTEMS -->
+  <section class="section" id="systems">
+    <div class="sec-header rv">
+      <div class="sec-index">02 — Systems Array</div>
+      <h2 class="sec-title"><span class="glow">Capabilities</span><br>Online</h2>
+    </div>
+    <div class="systems-grid">
+      <div class="system-card rv rv-d1">
+        <div class="sys-icon">🎮</div>
+        <h3 class="sys-name">Game Engineering</h3>
+        <div class="sys-tags">
+          <span class="sys-tag">Unreal Engine</span>
+          <span class="sys-tag">Blueprint</span>
+          <span class="sys-tag">Level Design</span>
+          <span class="sys-tag">AI Systems</span>
+          <span class="sys-tag">QA Testing</span>
+          <span class="sys-tag">Game Balancing</span>
+        </div>
+      </div>
+      <div class="system-card rv rv-d2">
+        <div class="sys-icon">🧠</div>
+        <h3 class="sys-name">AI & Automation</h3>
+        <div class="sys-tags">
+          <span class="sys-tag">AI Workflow Design</span>
+          <span class="sys-tag">Prompt Engineering</span>
+          <span class="sys-tag">Process Automation</span>
+          <span class="sys-tag">AI Integration</span>
+          <span class="sys-tag">AEO & GEO Strategy</span>
+        </div>
+      </div>
+      <div class="system-card rv rv-d3">
+        <div class="sys-icon">⚡</div>
+        <h3 class="sys-name">Full-Stack Development</h3>
+        <div class="sys-tags">
+          <span class="sys-tag">Python</span>
+          <span class="sys-tag">FastAPI</span>
+          <span class="sys-tag">Next.js</span>
+          <span class="sys-tag">WebSockets</span>
+          <span class="sys-tag">Docker</span>
+          <span class="sys-tag">JavaScript</span>
+        </div>
+      </div>
+      <div class="system-card rv rv-d4">
+        <div class="sys-icon">🎨</div>
+        <h3 class="sys-name">Design & Prototyping</h3>
+        <div class="sys-tags">
+          <span class="sys-tag">Rapid Prototyping</span>
+          <span class="sys-tag">UX Design</span>
+          <span class="sys-tag">Vibe Coding</span>
+          <span class="sys-tag">No-Code AI Tools</span>
+          <span class="sys-tag">Experiential Design</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DATA FLOW VISUALIZER -->
+  <section class="section dataflow-section" id="dataflow">
+    <div class="sec-header rv">
+      <div class="sec-index">03 — Data Flow Visualizer</div>
+      <h2 class="sec-title"><span class="glow">AI Pipeline</span><br>Architecture</h2>
+    </div>
+    <div class="rv rv-d1">
+      <canvas id="dataflow-canvas"></canvas>
+      <div class="dataflow-controls">
+        <button class="df-btn active" data-mode="normal">Normal Flow</button>
+        <button class="df-btn" data-mode="burst">Burst Mode</button>
+        <button class="df-btn stress" data-mode="stress">⚠ Stress Test</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPERIENCE TIMELINE -->
+  <section class="section" id="timeline">
+    <div class="sec-header rv">
+      <div class="sec-index">04 — Mission Log</div>
+      <h2 class="sec-title"><span class="glow">Experience</span><br>Timeline</h2>
+    </div>
+    <div class="timeline-entries">
+      <div class="tl-entry rv rv-d1">
+        <div class="tl-node">
+          <div class="tl-rail-line"></div>
+          <div class="tl-dot"></div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-date">Oct 2025 — Present</div>
+          <h3 class="tl-role">AI Automation Executive</h3>
+          <div class="tl-company">Learn with Leaders</div>
+          <p class="tl-desc">Architecting AI-augmented front-end systems that supercharge operational efficiency. Designing automation workflows that bridge strategic planning and technical execution. Deploying AI-powered solutions aligned with organizational goals.</p>
+        </div>
+      </div>
+      <div class="tl-entry rv rv-d2">
+        <div class="tl-node">
+          <div class="tl-rail-line"></div>
+          <div class="tl-dot"></div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-date">Aug — Oct 2025</div>
+          <h3 class="tl-role">Vibe Coder</h3>
+          <div class="tl-company">Hopscotch Games, India</div>
+          <p class="tl-desc">Designed and developed games using AI-augmented workflows for blazing-fast iteration. Pioneered vibe coding methodology — creating emotionally engaging experiences through intuitive prototyping. Slashed prototype-to-testing cycles using AI tools.</p>
+        </div>
+      </div>
+      <div class="tl-entry rv rv-d3">
+        <div class="tl-node">
+          <div class="tl-rail-line"></div>
+          <div class="tl-dot"></div>
+        </div>
+        <div class="tl-card">
+          <div class="tl-date">May — Aug 2025</div>
+          <h3 class="tl-role">Game Designer · QA · Gameplay Analyst</h3>
+          <div class="tl-company">Freelance</div>
+          <p class="tl-desc">Deep gameplay analysis and QA testing across multiple projects. Designed game mechanics, level layouts, and progression systems. Documented everything with industry-standard methodologies and iterated based on real player data.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECT -->
+  <section class="section" id="projects">
+    <div class="sec-header rv">
+      <div class="sec-index">05 — Project Archive</div>
+      <h2 class="sec-title"><span class="glow">Key</span><br>Build</h2>
+    </div>
+    <div class="project-mega rv rv-d1">
+      <div class="proj-type">// Featured Build</div>
+      <h3 class="proj-name">AI Orchestrator Platform</h3>
+      <p class="proj-desc">
+        A full-stack real-time adaptive AI workflow platform enabling dynamic process automation and intelligent orchestration. FastAPI backend for blazing performance, Next.js frontend for seamless UX, WebSockets for live bi-directional communication, Docker for containerized deployment. Advanced AI capabilities for adaptive decision-making and real-time responsiveness.
+      </p>
+      <div class="proj-stack">
+        <span class="proj-tech">FastAPI</span>
+        <span class="proj-tech">Next.js</span>
+        <span class="proj-tech">WebSockets</span>
+        <span class="proj-tech">Docker</span>
+        <span class="proj-tech">AI Integration</span>
+        <span class="proj-tech">Real-time Systems</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- EDUCATION -->
+  <section class="section" id="education">
+    <div class="sec-header rv">
+      <div class="sec-index">06 — Foundation</div>
+      <h2 class="sec-title"><span class="glow">Education</span></h2>
+    </div>
+    <div class="edu-row">
+      <div class="edu-block rv rv-d1">
+        <div class="edu-period">2020 — 2023</div>
+        <h3 class="edu-title">Bachelor of Arts</h3>
+        <p class="edu-inst">Kannur University</p>
+      </div>
+      <div class="edu-block rv rv-d2">
+        <div class="edu-period">July 2023 — 2024</div>
+        <h3 class="edu-title">Advanced Game Design — Unreal Engine</h3>
+        <p class="edu-inst">Pearl Academy — Game & Interactive Media Design</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- AVAILABILITY -->
+  <section class="section avail-section" id="availability">
+    <div class="sec-header rv" style="text-align:center;">
+      <div class="sec-index" style="justify-content:center;">07 — Availability</div>
+      <h2 class="sec-title"><span class="glow">Open To</span></h2>
+    </div>
+    <div class="avail-grid rv rv-d1">
+      <span class="avail-tag">AI Training & Annotation</span>
+      <span class="avail-tag">Frontend Building — No-Code AI</span>
+      <span class="avail-tag">AI Video Creation</span>
+      <span class="avail-tag">Website Building with AI</span>
+      <span class="avail-tag">AEO & GEO Optimisation</span>
+      <span class="avail-tag">AI Workflow Automation</span>
+      <span class="avail-tag">Game Design & QA</span>
+      <span class="avail-tag">Critical Thinking Roles</span>
+      <span class="avail-tag">Problem Solving & Strategy</span>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="contact-core" id="connect">
+    <div class="rv">
+      <h2 class="contact-heading">
+        <span class="gradient-text">Establish<br>Connection</span>
+      </h2>
+      <p class="contact-sub">
+        Ready to collaborate on something extraordinary. AI projects, game design, automation systems, or anything that needs a creative mind with a systems brain.
+      </p>
+      <div class="contact-info-row">
+        <a href="mailto:sidharthbabu740@gmail.com" class="contact-info-item">
+          <span class="ci-icon">✉</span>
+          sidharthbabu740@gmail.com
+        </a>
+        <a href="tel:+918075972481" class="contact-info-item">
+          <span class="ci-icon">☎</span>
+          +91 8075972481
+        </a>
+        <a href="https://www.linkedin.com/in/sidharth-babu-18905328b" target="_blank" class="contact-info-item">
+          <span class="ci-icon">in</span>
+          LinkedIn
+        </a>
+      </div>
+      <div class="contact-btns">
+        <a href="mailto:sidharthbabu740@gmail.com" class="btn-nexus btn-primary">Send Transmission</a>
+        <a href="https://www.linkedin.com/in/sidharth-babu-18905328b" target="_blank" class="btn-nexus btn-ghost">LinkedIn Profile</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="hud-footer">
+    <p>© 2025 SIDHARTH BABU — NEXUS CORE v2.0 — CRAFTED WITH AI + OBSESSION</p>
+  </footer>
+</div>
+
+<!-- ============ SCRIPTS ============ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ==========================================================
+// PRELOADER
+// ==========================================================
+const loaderFill = document.getElementById('loaderFill');
+let loadProgress = 0;
+const loadInterval = setInterval(() => {
+  loadProgress += Math.random() * 15 + 5;
+  if (loadProgress >= 100) {
+    loadProgress = 100;
+    clearInterval(loadInterval);
+    setTimeout(() => {
+      document.getElementById('preloader').classList.add('hidden');
+      startBootSequence();
+    }, 400);
+  }
+  loaderFill.style.width = loadProgress + '%';
+}, 200);
+
+// ==========================================================
+// BOOT SEQUENCE (HERO ANIMATION)
+// ==========================================================
+function startBootSequence() {
+  const line1 = document.getElementById('bootLine1');
+  const line2 = document.getElementById('bootLine2');
+  const name = document.getElementById('heroName');
+  const sub = document.getElementById('heroSub');
+  const actions = document.getElementById('heroActions');
+  const scroll = document.getElementById('heroScroll');
+
+  const timeline = [
+    { el: line1, delay: 200 },
+    { el: line2, delay: 600 },
+    { el: name, delay: 1000 },
+    { el: sub, delay: 1500 },
+    { el: actions, delay: 1900 },
+    { el: scroll, delay: 2400 },
+  ];
+
+  timeline.forEach(({ el, delay }) => {
+    setTimeout(() => {
+      el.style.transition = 'all 0.8s cubic-bezier(0.23,1,0.32,1)';
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }, delay);
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(25px)';
+  });
+}
+
+// ==========================================================
+// WORD CYCLE
+// ==========================================================
+const words = ['GAME DESIGNER', 'AI BUILDER', 'VIBE CODER', 'SYSTEMS ARCHITECT', 'NO-CODE BUILDER', 'AI TRAINER', 'PROBLEM SOLVER'];
+let wordIdx = 0;
+const cycleEl = document.getElementById('cycleWord');
+
+function cycleWords() {
+  cycleEl.style.transition = 'opacity 0.4s, transform 0.4s';
+  cycleEl.style.opacity = '0';
+  cycleEl.style.transform = 'translateY(-8px)';
+  setTimeout(() => {
+    wordIdx = (wordIdx + 1) % words.length;
+    cycleEl.textContent = words[wordIdx];
+    cycleEl.style.transform = 'translateY(8px)';
+    requestAnimationFrame(() => {
+      cycleEl.style.opacity = '1';
+      cycleEl.style.transform = 'translateY(0)';
+    });
+  }, 400);
+}
+setInterval(cycleWords, 2500);
+
+// ==========================================================
+// CURSOR
+// ==========================================================
+const cCore = document.getElementById('cCore');
+const cField = document.getElementById('cField');
+let cx = 0, cy = 0, fx = 0, fy = 0;
+
+document.addEventListener('mousemove', e => {
+  cx = e.clientX; cy = e.clientY;
+  cCore.style.left = (cx - 3) + 'px';
+  cCore.style.top = (cy - 3) + 'px';
+});
+
+function animCursor() {
+  fx += (cx - fx) * 0.1;
+  fy += (cy - fy) * 0.1;
+  cField.style.left = (fx - 22) + 'px';
+  cField.style.top = (fy - 22) + 'px';
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+
+const interactives = document.querySelectorAll('a, button, .system-card, .tl-card, .project-mega, .edu-block, .avail-tag, .btn-nexus, .metric-cell');
+interactives.forEach(el => {
+  el.addEventListener('mouseenter', () => cField.classList.add('active'));
+  el.addEventListener('mouseleave', () => cField.classList.remove('active'));
+});
+
+// ==========================================================
+// THREE.JS — NEXUS CORE PARTICLE WORLD
+// ==========================================================
+(function() {
+  const canvas = document.getElementById('world');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
+  camera.position.z = 40;
+
+  // PARTICLE FIELD — Multi-layered
+  function createParticleLayer(count, spread, baseColor, size, speed) {
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(count * 3);
+    const col = new Float32Array(count * 3);
+    const vel = [];
+    const c = new THREE.Color(baseColor);
+
+    for (let i = 0; i < count; i++) {
+      pos[i*3] = (Math.random() - 0.5) * spread;
+      pos[i*3+1] = (Math.random() - 0.5) * spread;
+      pos[i*3+2] = (Math.random() - 0.5) * spread * 0.5;
+
+      const variation = 0.7 + Math.random() * 0.3;
+      col[i*3] = c.r * variation;
+      col[i*3+1] = c.g * variation;
+      col[i*3+2] = c.b * variation;
+
+      vel.push({
+        x: (Math.random() - 0.5) * speed,
+        y: (Math.random() - 0.5) * speed,
+        z: (Math.random() - 0.5) * speed * 0.3,
+      });
+    }
+
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+
+    const mat = new THREE.PointsMaterial({
+      size,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+    });
+
+    const points = new THREE.Points(geo, mat);
+    return { points, geo, vel, pos };
+  }
+
+  const layer1 = createParticleLayer(800, 100, 0x00ffe0, 0.12, 0.008);
+  const layer2 = createParticleLayer(400, 80, 0xff00ff, 0.18, 0.005);
+  const layer3 = createParticleLayer(300, 60, 0x0088ff, 0.08, 0.012);
+  const layer4 = createParticleLayer(200, 120, 0xffa800, 0.06, 0.003);
+
+  scene.add(layer1.points, layer2.points, layer3.points, layer4.points);
+
+  // CENTRAL CORE — Wireframe icosahedron
+  const coreGeo = new THREE.IcosahedronGeometry(3, 1);
+  const coreMat = new THREE.MeshBasicMaterial({
+    color: 0x00ffe0,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.15,
+  });
+  const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+  scene.add(coreMesh);
+
+  // Outer ring
+  const ringGeo = new THREE.TorusGeometry(6, 0.03, 16, 100);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0xff00ff,
+    transparent: true,
+    opacity: 0.12,
+  });
+  const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+  ringMesh.rotation.x = Math.PI / 2.5;
+  scene.add(ringMesh);
+
+  const ring2Geo = new THREE.TorusGeometry(9, 0.02, 16, 120);
+  const ring2Mat = new THREE.MeshBasicMaterial({
+    color: 0x00ffe0,
+    transparent: true,
+    opacity: 0.06,
+  });
+  const ring2Mesh = new THREE.Mesh(ring2Geo, ring2Mat);
+  ring2Mesh.rotation.x = Math.PI / 1.8;
+  ring2Mesh.rotation.y = 0.5;
+  scene.add(ring2Mesh);
+
+  // Mouse + Scroll
+  let mX = 0, mY = 0, tX = 0, tY = 0;
+  let sY = 0;
+
+  document.addEventListener('mousemove', e => {
+    mX = (e.clientX / window.innerWidth) * 2 - 1;
+    mY = -(e.clientY / window.innerHeight) * 2 + 1;
+  });
+
+  window.addEventListener('scroll', () => { sY = window.scrollY; });
+
+  function animateLayer(layer, spread) {
+    const p = layer.pos;
+    const v = layer.vel;
+    for (let i = 0; i < v.length; i++) {
+      p[i*3] += v[i].x;
+      p[i*3+1] += v[i].y;
+      p[i*3+2] += v[i].z;
+      if (Math.abs(p[i*3]) > spread/2) v[i].x *= -1;
+      if (Math.abs(p[i*3+1]) > spread/2) v[i].y *= -1;
+      if (Math.abs(p[i*3+2]) > spread/4) v[i].z *= -1;
+    }
+    layer.geo.attributes.position.needsUpdate = true;
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    tX += (mX * 4 - tX) * 0.015;
+    tY += (mY * 4 - tY) * 0.015;
+
+    const scrollFactor = sY * 0.0002;
+
+    // Rotate all layers slightly differently
+    layer1.points.rotation.y = tX * 0.08 + scrollFactor;
+    layer1.points.rotation.x = tY * 0.05;
+    layer2.points.rotation.y = -tX * 0.06 + scrollFactor * 0.5;
+    layer2.points.rotation.x = -tY * 0.04;
+    layer3.points.rotation.y = tX * 0.1 - scrollFactor * 0.3;
+    layer4.points.rotation.y = tX * 0.03 + scrollFactor * 1.2;
+
+    animateLayer(layer1, 100);
+    animateLayer(layer2, 80);
+    animateLayer(layer3, 60);
+    animateLayer(layer4, 120);
+
+    // Core
+    coreMesh.rotation.y += 0.003;
+    coreMesh.rotation.x += 0.001;
+    coreMesh.scale.setScalar(1 + Math.sin(Date.now() * 0.001) * 0.05);
+
+    ringMesh.rotation.z += 0.002;
+    ring2Mesh.rotation.z -= 0.0015;
+
+    // Camera parallax based on scroll
+    camera.position.y = -sY * 0.005;
+    camera.lookAt(0, -sY * 0.005, 0);
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+
+// ==========================================================
+// DATA FLOW VISUALIZER (2D Canvas)
+// ==========================================================
+(function() {
+  const canvas = document.getElementById('dataflow-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  let mode = 'normal';
+  let nodes = [];
+  let particles = [];
+  let mousePos = { x: 0, y: 0 };
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    W = canvas.width = rect.width * window.devicePixelRatio;
+    H = canvas.height = rect.height * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    initNodes();
+  }
+
+  const nodeLabels = ['INPUT', 'LLM', 'PROMPT', 'PIPELINE', 'AGENT', 'OUTPUT', 'MEMORY', 'TOOLS', 'EVAL'];
+
+  function initNodes() {
+    const w = canvas.getBoundingClientRect().width;
+    const h = canvas.getBoundingClientRect().height;
+    nodes = nodeLabels.map((label, i) => {
+      const col = i % 3;
+      const row = Math.floor(i / 3);
+      return {
+        x: w * 0.2 + col * (w * 0.3),
+        y: h * 0.2 + row * (h * 0.3),
+        label,
+        radius: 20,
+        color: ['#00ffe0', '#ff00ff', '#0af', '#0f0', '#ffa800', '#ff2d7b', '#00ffe0', '#ff00ff', '#0f0'][i],
+        pulse: Math.random() * Math.PI * 2,
+      };
+    });
+  }
+
+  const connections = [
+    [0,1],[1,2],[2,3],[3,4],[4,5],[0,6],[6,7],[7,4],[1,7],[2,8],[8,5],[3,6]
+  ];
+
+  function spawnParticle(fromIdx, toIdx) {
+    const from = nodes[fromIdx];
+    const to = nodes[toIdx];
+    if (!from || !to) return;
+    particles.push({
+      x: from.x, y: from.y,
+      tx: to.x, ty: to.y,
+      progress: 0,
+      speed: mode === 'stress' ? 0.03 + Math.random() * 0.03 : mode === 'burst' ? 0.02 + Math.random() * 0.02 : 0.008 + Math.random() * 0.008,
+      color: from.color,
+      size: mode === 'stress' ? 2 + Math.random() * 2 : 1.5,
+    });
+  }
+
+  let frameCount = 0;
+
+  function draw() {
+    const w = canvas.getBoundingClientRect().width;
+    const h = canvas.getBoundingClientRect().height;
+    ctx.clearRect(0, 0, w, h);
+
+    // Draw connections
+    connections.forEach(([a, b]) => {
+      const na = nodes[a], nb = nodes[b];
+      if (!na || !nb) return;
+      ctx.beginPath();
+      ctx.moveTo(na.x, na.y);
+      ctx.lineTo(nb.x, nb.y);
+      ctx.strokeStyle = 'rgba(0,255,224,0.06)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // Spawn particles
+    const spawnRate = mode === 'stress' ? 3 : mode === 'burst' ? 2 : 1;
+    if (frameCount % (mode === 'stress' ? 2 : mode === 'burst' ? 4 : 8) === 0) {
+      for (let s = 0; s < spawnRate; s++) {
+        const conn = connections[Math.floor(Math.random() * connections.length)];
+        spawnParticle(conn[0], conn[1]);
+        if (Math.random() > 0.5) spawnParticle(conn[1], conn[0]);
+      }
+    }
+
+    // Draw + update particles
+    particles = particles.filter(p => {
+      p.progress += p.speed;
+      if (p.progress >= 1) return false;
+      p.x = p.x + (p.tx - p.x) * p.speed * 3;
+      p.y = p.y + (p.ty - p.y) * p.speed * 3;
+
+      // Recalculate based on progress
+      const fromX = p.x;
+      const fromY = p.y;
+      const lerpX = (1 - p.progress) * fromX + p.progress * p.tx;
+      const lerpY = (1 - p.progress) * fromY + p.progress * p.ty;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = 1 - p.progress * 0.5;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Glow
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = 0.05;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      return true;
+    });
+
+    // Draw nodes
+    nodes.forEach((n, i) => {
+      n.pulse += 0.02;
+      const pulseScale = 1 + Math.sin(n.pulse) * 0.1;
+      const r = n.radius * pulseScale;
+
+      // Mouse proximity
+      const dx = mousePos.x - n.x;
+      const dy = mousePos.y - n.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const hover = dist < 60;
+
+      // Outer glow
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r + (hover ? 15 : 8), 0, Math.PI * 2);
+      ctx.fillStyle = n.color;
+      ctx.globalAlpha = hover ? 0.08 : 0.02;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Core
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      ctx.strokeStyle = n.color;
+      ctx.lineWidth = hover ? 2 : 1;
+      ctx.globalAlpha = hover ? 0.8 : 0.4;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Inner dot
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = n.color;
+      ctx.globalAlpha = 0.8;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Label
+      ctx.font = '600 9px "IBM Plex Mono", monospace';
+      ctx.fillStyle = hover ? n.color : 'rgba(90,90,128,0.8)';
+      ctx.textAlign = 'center';
+      ctx.fillText(n.label, n.x, n.y + r + 18);
+    });
+
+    frameCount++;
+    requestAnimationFrame(draw);
+  }
+
+  canvas.addEventListener('mousemove', e => {
+    const rect = canvas.getBoundingClientRect();
+    mousePos.x = e.clientX - rect.left;
+    mousePos.y = e.clientY - rect.top;
+  });
+
+  // Mode buttons
+  document.querySelectorAll('.df-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.df-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      mode = btn.dataset.mode;
+    });
+  });
+
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+
+// ==========================================================
+// SCROLL REVEAL
+// ==========================================================
+const rvEls = document.querySelectorAll('.rv');
+const rvObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('seen'); });
+}, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+rvEls.forEach(el => rvObserver.observe(el));
+
+// ==========================================================
+// METRIC COUNT-UP
+// ==========================================================
+const metricEls = document.querySelectorAll('.metric-value');
+const metricObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target;
+    const target = parseInt(el.dataset.target);
+    let cur = 0;
+    const inc = Math.max(1, target / 30);
+    const timer = setInterval(() => {
+      cur += inc;
+      if (cur >= target) {
+        el.textContent = target === 100 ? '∞' : target + '+';
+        clearInterval(timer);
+      } else {
+        el.textContent = Math.floor(cur);
+      }
+    }, 50);
+    metricObs.unobserve(el);
+  });
+}, { threshold: 0.5 });
+metricEls.forEach(el => metricObs.observe(el));
+
+// ==========================================================
+// SMOOTH SCROLL
+// ==========================================================
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const t = document.querySelector(a.getAttribute('href'));
+    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+// ==========================================================
+// PARALLAX HERO NAME
+// ==========================================================
+const heroName = document.getElementById('heroName');
+window.addEventListener('scroll', () => {
+  const s = window.scrollY;
+  if (s < window.innerHeight) {
+    heroName.style.transform = `translateY(${s * 0.25}px)`;
+    heroName.style.opacity = Math.max(0, 1 - s / (window.innerHeight * 0.6));
+  }
+});
+</script>
+</body>
+</html>
